@@ -1,0 +1,26 @@
+{% extends "cms/index.html" %}
+{% block title %}个人信息{% endblock %}
+{% block page_title %}
+    <table class="table table-bordered">
+        <tr>
+            <td>用户名</td>
+            <td>{{ user.username }}</td>
+        </tr>
+        <tr>
+            <td>邮箱</td>
+            <td>{{ user.email }}</td>
+        </tr>
+        <tr>
+            <td>权限</td>
+            <td>*****</td>
+        </tr>
+        <tr>
+            <td>加入时间</td>
+            <td>{{ user.join_time }}</td>
+        </tr>
+
+    </table>
+{% endblock %}
+
+
+
