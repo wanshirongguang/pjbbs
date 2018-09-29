@@ -12,8 +12,8 @@ import json
 Created on 2017-06-12
 
 """
-ACCESS_KEY_ID = "LTAIEviKZcSRfFGT"
-ACCESS_KEY_SECRET = "VxaIKR3evsihY9J4wBcVRGLXKJPE3s"
+ACCESS_KEY_ID = "LTAIAc5FjEReAAdF"
+ACCESS_KEY_SECRET = "ogdhJhHCreE4bfu3uQ4z7MEWgFHzKs"
 # 注意：不要更改
 REGION = "cn-hangzhou"
 PRODUCT_NAME = "Dysmsapi"
@@ -26,8 +26,8 @@ def send_sms(phone_numbers,smscode=None):
     params = "{\"code\":\""+ smscode+ "\"}"
     template_param = params
     business_id = uuid.uuid1()
-    sign_name = "破茧科技论坛"
-    template_code = "SMS_143867571"
+    sign_name = "破茧科技"
+    template_code = "SMS_146120275"
     smsRequest = SendSmsRequest.SendSmsRequest()
     # 申请的短信模板编码,必填
     smsRequest.set_TemplateCode(template_code)

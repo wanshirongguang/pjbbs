@@ -64,10 +64,10 @@
                 <li class="comments-manage"><a href="#">评论管理</a></li>
                 {% endif %}
                 {% if user.checkpermission(16) %}
-                <li class="board-manage"><a href="#">板块管理</a></li>
+                <li class="board-manage"><a href="/cms/board/">板块管理</a></li>
                 {% endif %}
                 {% if user.checkpermission(32) %}
-                <li class="nav-group user-manage"><a href="#">用户管理</a></li>
+                <li class="nav-group user-manage"><a href="">用户管理</a></li>
                 {% endif %}
                 {% if user.checkpermission(64) %}
                 <li class="nav-group cmsuser-manage"><a href="#">CMS用户管理</a></li>

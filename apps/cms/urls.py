@@ -1,7 +1,9 @@
 # 后台
 from flask import Blueprint
 from flask import render_template
-from apps.cms.froms import UserForm,pwdForm,emailForm,emailcodeFrom
+from apps.cms.froms import UserForm,pwdForm,emailForm,emailcodeFrom,\
+                            bannerFrom,updatebannerFrom,addBoaderFrom,\
+                            updateboardFrom,deleteboardFrom
 from flask import request,jsonify
 from apps.common.baseResp import *
 from apps.cms.models import *
@@ -11,6 +13,8 @@ from flask_mail import Message
 from apps.common.memcachedUtil import saveCache,getCache
 from exts import db,mail
 from functools import wraps
+from apps.common.models import Banner,Board
+from qiniu import Auth
 
 bp = Blueprint('cms',__name__,url_prefix="/cms")
 def lonigDecotor(func):
@@ -41,11 +45,12 @@ def checkPermission(permission):
         return inner
     return outer
 
-
 @bp.route("/")
 def loginView():
     return render_template("cms/login.html")
-
+@bp.route('/login/')
+def ssss():
+    return render_template("cms/login.html")
 @bp.route('/login/',methods=["post"])
 def login():
     fm = UserForm(formdata=request.form)
@@ -71,7 +76,6 @@ def login():
 @lonigDecotor
 def cms_index():
         return render_template("cms/index.html")
-
 
 @bp.route("/information/")
 @lonigDecotor
@@ -100,26 +104,17 @@ class resetPwd(views.MethodView):
             return jsonify(respParamErr(msg=fm.err))
 
 class resetEamil(views.MethodView):
-
     decorators = [checkPermission(Permission.USER_INFO),lonigDecotor]
-
     def get(self):
         return render_template("cms/resetemail.html")
     def post(self):
         fm = emailcodeFrom(formdata=request.form)
         if fm.validate():
             email = fm.email.data
-            # if getCache(fm.email.data) == fm.code.data.upper():
-            #     r = User.query.filter(User.email == email).first()
-            #     if not r:
             rs = User.query.filter(User.username == session["username"]).first()
             rs.email = email
             db.session.commit()
             return jsonify(respSuccess(msg='修改成功'))
-            #     else:
-            #         return jsonify(respParamErr(msg="邮箱已被使用"))
-            # else:
-            #     return jsonify(respParamErr(msg="验证码错误"))
         else:
             return jsonify(respParamErr(msg=fm.err))
 
@@ -148,9 +143,119 @@ def send_email():
 @lonigDecotor
 @checkPermission(Permission.BANNER)
 def banner():
-    return render_template("cms/banner.html")
+    banners = Banner.query.all()
+    context = {
+        'banners': banners
+    }
+    return render_template("cms/banner.html",**context)
 
+@bp.route("/addbanner/",methods=["post"])
+@lonigDecotor
+@checkPermission(Permission.BANNER)
+def addbanner():
+    fm = bannerFrom(formdata=request.form)
+    if fm.validate():
+        banner = Banner(bannerName=fm.bannerName.data,
+                        imglink=fm.imglink.data,
+                        link=fm.link.data,
+                        priority=fm.priority.data)
+        db.session.add(banner)
+        db.session.commit()
+        return jsonify(respSuccess(msg='添加成功'))
+    else:
+        return jsonify(respParamErr(msg=fm.err))
 
+@bp.route("/updatebanner/",methods=["post"])
+@lonigDecotor
+@checkPermission(Permission.BANNER)
+def updateDanner():
+    fm = updatebannerFrom(formdata=request.form)
+    if fm.validate():
+        r = Banner.query.filter(Banner.id == fm.id.data).first()
+        r.bannerName = fm.bannerName.data
+        r.imglink = fm.imglink.data
+        r.link = fm.link.data
+        r.priority = fm.priority.data
+        db.session.commit()
+        return jsonify(respSuccess(msg='更新成功'))
+    else:
+        return jsonify(respParamErr(msg=fm.err))
+
+@bp.route("/deletebanner/",methods=["post"])
+@lonigDecotor
+@checkPermission(Permission.BANNER)
+def deleteBanner():
+    # 拿到客户端提交的id
+    banner_id = request.values.get("id")
+    if not banner_id or not banner_id.isdigit():
+        return jsonify(respParamErr(msg='请输入正确banner_id'))
+    # 从数据库删除
+    banner = Banner.query.filter(Banner.id == banner_id).first()
+    if banner:
+        db.session.delete(banner)
+        db.session.commit()
+        return jsonify(respSuccess(msg='删除成功'))
+    else:  # 没有
+        return jsonify(respParamErr(msg='请输入正确banner_id'))
+
+@bp.route("/qiniu_token/")
+@lonigDecotor
+@checkPermission(Permission.BANNER)
+def qiniukey():
+    # 通过secer-key id 生成一个令牌，返回给客户端
+    ak = "gixRZTC9nnM_ODSEyAmDtFPVBD5sBWJo1dsfszvB"
+    sk = "X8TYRWzELi-hfyzl1MeAkEbS9i5DKL_8qI4m_o3l"
+    q = Auth(ak, sk)
+    bucket_name = 'pjssb' # 仓库的名字
+    token = q.upload_token(bucket_name)
+    return jsonify({'uptoken': token})
+
+@bp.route("/board/")
+@lonigDecotor
+@checkPermission(Permission.POSTS)
+def board():
+    board = Board.query.all()
+    context = {
+        'boards': board
+    }
+    return render_template("cms/board.html", **context)
+@bp.route("/addboard/",methods=["post"])
+@lonigDecotor
+@checkPermission(Permission.POSTS)
+def addboard():
+    fm = addBoaderFrom(formdata=request.form)
+    if fm.validate():
+        board = Board(boardname=fm.boardname.data)
+        db.session.add(board)
+        db.session.commit()
+        return jsonify(respSuccess(msg='添加成功'))
+    else:
+        return jsonify(respParamErr(msg=fm.err))
+
+@bp.route("/updateboard/",methods=["post"])
+@lonigDecotor
+@checkPermission(Permission.POSTS)
+def updateboard():
+    fm  = updateboardFrom(formdata=request.form)
+    if fm.validate():
+        board = Board.query.filter(Board.id == fm.id.data).first()
+        board.boardname = fm.boardname.data
+        db.session.commit()
+        return jsonify(respSuccess(msg='修改成功'))
+    else:
+        return jsonify(respParamErr(msg=fm.err))
+@bp.route("/deleteboard/",methods=["post"])
+@lonigDecotor
+@checkPermission(Permission.POSTS)
+def deleteboard():
+    fm = deleteboardFrom(formdata=request.form)
+    if fm.validate():
+        board = Board.query.filter(Board.id == fm.id.data).first()
+        db.session.delete(board)
+        db.session.commit()
+        return jsonify(respSuccess(msg='删除成功'))
+    else:
+        return jsonify(respParamErr(msg=fm.err))
 
 
 # 每次请求的时候都会执行，返回字典可以直接在模板中使用

@@ -11,6 +11,7 @@ from apps.common.captcha.xtcaptcha import Captcha
 from io import BytesIO
 from apps.common.memcachedUtil import saveCache,delete,getCache
 from apps.front.models import *
+from apps.common.models import Banner,Board
 #
 bp = Blueprint('front',__name__)
 
@@ -19,7 +20,14 @@ bp = Blueprint('front',__name__)
 
 @bp.route("/")
 def loginView():
-    return render_template("front/index.html")
+    banners = Banner.query.order_by(Banner.priority.desc()).limit(4)
+    board = Board.query.all()
+    print(board[0].boardname)
+    context = {
+        'banners': banners,
+        "boards":board
+    }
+    return render_template("front/index.html",**context)
 
 class Signup(views.MethodView):
     def get(self):
@@ -46,6 +54,7 @@ def send_sms_code():
         rs = ''.join(random.sample(rs, 4))
         r = send_sms(phone_numbers=fm.telephone.data,
                      smscode=rs)
+        print(json.loads(r.decode("utf-8"))['Code'])
 # b'{"Message":"OK","RequestId":"26F47853-F6CD-486A-B3F7-7DFDCE119713","BizId":"102523637951132428^0","Code":"OK"}'
         if json.loads(r.decode("utf-8"))['Code'] == 'OK':
             saveCache(fm.telephone.data,rs,30*60)
@@ -112,6 +121,7 @@ def sendcode():
         r = send_sms(phone_numbers=fm.telephone.data,
                      smscode=rs)
 # b'{"Message":"OK","RequestId":"26F47853-F6CD-486A-B3F7-7DFDCE119713","BizId":"102523637951132428^0","Code":"OK"}'
+
         if json.loads(r.decode("utf-8"))['Code'] == 'OK':
             saveCache(fm.telephone.data,rs,30*60)
             return jsonify(respSuccess(msg="短信验证码发送成功，请查收"))

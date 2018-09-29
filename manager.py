@@ -6,6 +6,7 @@ from pjke import app
 from exts import db
 from apps.cms.models import *
 from apps.front.models import *
+from apps.common.models import *
 # flask-script的使用
 manage = Manager(app)
 # 要使用flask-migrate必须绑定app和db
